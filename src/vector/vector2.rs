@@ -112,7 +112,7 @@ impl DivAssign<f64> for Vec2 {
 // Multiply or (divide) a |v| . |v2| where v is a vector
 // Returns a scalar
 // Relation is s = |v| . |v2| or s = |v| / |v2|
-// Do not mismatch with vector multiplication it returns a scalar
+// Do not mismatch with s * |v| multiplication it returns a vector
 impl Mul<Vec2> for Vec2 {
     type Output = f64;
 
