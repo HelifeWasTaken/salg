@@ -1,6 +1,9 @@
 use std::ops::{
-    Add,       Sub,       Mul,       Div,       Neg,
-    AddAssign, SubAssign, MulAssign, DivAssign
+    Add, AddAssign,
+    Sub, SubAssign,
+    Mul, MulAssign,
+    Div, DivAssign,
+    Neg
 };
 use std::cmp::{PartialEq};
 
