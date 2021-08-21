@@ -4,12 +4,13 @@ Is a rust library that will feature all the necessity for vector and matrices co
 
 Library features:
 
-- Vec2 -> Ok
-- Vec3 -> Ok
+- Vec2
+- Vec3
+- Vec4
 
 Will feature:
 
-- Vec4
+- Quaternions
 - Mat2
 - Mat3
 - Mat4
