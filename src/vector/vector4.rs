@@ -11,6 +11,7 @@ use std::ops::{
 };
 use std::cmp::{PartialEq};
 use super::vector3::Vec3;
+use super::quaternions::Quaternion;
 
 #[derive(Clone, Copy, Debug)]
 pub struct Vec4 {
@@ -107,6 +108,45 @@ impl Vec4 {
         }
     }
 
+    pub fn convert_to_unit_norm(&mut self) {
+        let angle = self.w * std::f64::consts::PI / 180.0;
+        self.normalize();
+        self.w = (angle * 0.5).cos();
+        let v = self.to_pure_vec3() * (angle * 0.5).sin();
+        self.x = v.x;
+        self.y = v.y;
+        self.z = v.z;
+    }
+
+    pub fn conjugate(&self) -> Vec4 {
+        Vec4 {
+            x: -self.x,
+            y: -self.y,
+            z: -self.z,
+            w: self.w
+        }
+    }
+
+    pub fn inverse(&self) -> Vec4 {
+        let norm = self.norm();
+        let conj = self.conjugate();
+        let v3 = Vec3::new(conj.x, conj.y, conj.z) * (1.0 / (norm * norm));
+        Vec4 {
+            x: v3.x,
+            y: v3.y,
+            z: v3.z,
+            w: conj.w * norm
+        }
+    }
+
+    pub fn rotate(&self, rhs: &Vec4) -> Vec3 {
+        Quaternion {
+            v: Vec3::new(self.x, self.y, self.z),
+            s: self.w
+        }.rotate(&(Quaternion {
+            v: Vec3::new(rhs.x, rhs.y, rhs.z),
+            s: rhs.w}))
+    }
 }
 
 impl Add<Vec3> for Vec4 {
