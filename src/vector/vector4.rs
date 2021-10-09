@@ -11,6 +11,7 @@ use std::ops::{
 };
 use std::cmp::{PartialEq};
 use super::vector3::Vec3;
+use super::quaternions::Quaternion;
 
 #[derive(Clone, Copy, Debug)]
 pub struct Vec4 {
@@ -107,47 +108,88 @@ impl Vec4 {
         }
     }
 
+    pub fn convert_to_unit_norm(&mut self) {
+        let angle = self.w * std::f64::consts::PI / 180.0;
+        self.normalize();
+        self.w = (angle * 0.5).cos();
+        let v = self.to_pure_vec3() * (angle * 0.5).sin();
+        self.x = v.x;
+        self.y = v.y;
+        self.z = v.z;
+    }
+
+    pub fn conjugate(&self) -> Vec4 {
+        Vec4 {
+            x: -self.x,
+            y: -self.y,
+            z: -self.z,
+            w: self.w
+        }
+    }
+
+    pub fn inverse(&self) -> Vec4 {
+        let norm = self.norm();
+        let conj = self.conjugate();
+        let v3 = Vec3::new(conj.x, conj.y, conj.z) * (1.0 / (norm * norm));
+        Vec4 {
+            x: v3.x,
+            y: v3.y,
+            z: v3.z,
+            w: conj.w * norm
+        }
+    }
+
+    pub fn rotate(&self, rhs: &Vec4) -> Vec3 {
+        Quaternion {
+            v: Vec3::new(self.x, self.y, self.z),
+            s: self.w
+        }.rotate(&(Quaternion {
+            v: Vec3::new(rhs.x, rhs.y, rhs.z),
+            s: rhs.w}))
+    }
 }
 
-impl Add<Vec3> for Vec4 {
+impl Add<Vec4> for Vec4 {
     type Output = Vec4;
 
-    fn add(self, other: Vec3) -> Vec4 {
+    fn add(self, other: Vec4) -> Vec4 {
         Vec4::new(
             self.x + other.x,
             self.y + other.y,
             self.z + other.z,
-            self.w
+            self.w + other.w
         )
     }
 }
 
-impl AddAssign<Vec3> for Vec4 {
-    fn add_assign(&mut self, other: Vec3) {
+impl AddAssign<Vec4> for Vec4 {
+    fn add_assign(&mut self, other: Vec4) {
         self.x += other.x;
         self.y += other.y;
         self.z += other.z;
+        self.w += other.w;
     }
 }
 
-impl Sub<Vec3> for Vec4 {
+impl Sub<Vec4> for Vec4 {
     type Output = Vec4;
 
-    fn sub(self, other: Vec3) -> Vec4 {
+    fn sub(self, other: Vec4) -> Vec4 {
         Vec4::new(
             self.x - other.x,
             self.y - other.y,
             self.z - other.z,
-            self.w
+            self.w - other.w
         )
     }
 }
 
-impl SubAssign<Vec3> for Vec4 {
-    fn sub_assign(&mut self, other: Vec3) {
+impl SubAssign<Vec4> for Vec4 {
+    fn sub_assign(&mut self, other: Vec4) {
         self.x -= other.x;
         self.y -= other.y;
         self.z -= other.z;
+        self.w -= other.w;
     }
 }
 
@@ -156,45 +198,47 @@ impl SubAssign<Vec3> for Vec4 {
  * It will be just a simple multiplication of a vector4 with vec3.
  * [x, y, z, w] * [u, v, t] = [xu, yu, zt, w]
  */
-impl Mul<Vec3> for Vec4 {
+impl Mul<Vec4> for Vec4 {
     type Output = Vec4;
 
-    fn mul(self, other: Vec3) -> Vec4 {
+    fn mul(self, other: Vec4) -> Vec4 {
         Vec4::new(
             self.x * other.x,
             self.y * other.y,
             self.z * other.z,
-            self.w
+            self.w * other.w
         )
     }
 }
 
-impl MulAssign<Vec3> for Vec4 {
-    fn mul_assign(&mut self, other: Vec3) {
+impl MulAssign<Vec4> for Vec4 {
+    fn mul_assign(&mut self, other: Vec4) {
         self.x *= other.x;
         self.y *= other.y;
         self.z *= other.z;
+        self.w *= other.w;
     }
 }
 
-impl Div<Vec3> for Vec4 {
+impl Div<Vec4> for Vec4 {
     type Output = Vec4;
 
-    fn div(self, other: Vec3) -> Vec4 {
+    fn div(self, other: Vec4) -> Vec4 {
         Vec4::new(
             self.x / other.x,
             self.y / other.y,
             self.z / other.z,
-            self.w
+            self.w / other.w
         )
     }
 }
 
-impl DivAssign<Vec3> for Vec4 {
-    fn div_assign(&mut self, other: Vec3) {
+impl DivAssign<Vec4> for Vec4 {
+    fn div_assign(&mut self, other: Vec4) {
         self.x /= other.x;
         self.y /= other.y;
         self.z /= other.z;
+        self.w /= other.w;
     }
 }
 
@@ -209,7 +253,7 @@ impl Neg for Vec4 {
             -self.x,
             -self.y,
             -self.z,
-            self.w
+            -self.w
         )
     }
 }
@@ -248,77 +292,77 @@ mod test {
     #[test]
     fn test_add() {
         let v1 = Vec4::new(1.0, 2.0, 3.0, 4.0);
-        let v2 = Vec3::new(1.0, 2.0, 3.0);
+        let v2 = Vec4::new(1.0, 2.0, 3.0, 4.0);
 
-        assert_eq!(v1 + v2, Vec4::new(2.0, 4.0, 6.0, 4.0));
+        assert_eq!(v1 + v2, Vec4::new(2.0, 4.0, 6.0, 8.0));
     }
 
     #[test]
     fn test_add_assign() {
         let mut v1 = Vec4::new(1.0, 2.0, 3.0, 4.0);
-        let v2 = Vec3::new(1.0, 2.0, 3.0);
+        let v2 = Vec4::new(1.0, 2.0, 3.0, 4.0);
 
         v1 += v2;
-        assert_eq!(v1, Vec4::new(2.0, 4.0, 6.0, 4.0));
+        assert_eq!(v1, Vec4::new(2.0, 4.0, 6.0, 8.0));
     }
 
     #[test]
     fn test_sub() {
         let v1 = Vec4::new(1.0, 2.0, 3.0, 4.0);
-        let v2 = Vec3::new(1.0, 2.0, 3.0);
-        assert_eq!(v1 - v2, Vec4::new(0.0, 0.0, 0.0, 4.0));
+        let v2 = Vec4::new(1.0, 2.0, 3.0, 4.0);
+        assert_eq!(v1 - v2, Vec4::new(0.0, 0.0, 0.0, 0.0));
     }
 
     #[test]
     fn test_sub_assign() {
         let mut v1 = Vec4::new(1.0, 2.0, 3.0, 4.0);
-        let v2 = Vec3::new(1.0, 2.0, 3.0);
+        let v2 = Vec4::new(1.0, 2.0, 3.0, 2.0);
         v1 -= v2;
-        assert_eq!(v1, Vec4::new(0.0, 0.0, 0.0, 4.0));
+        assert_eq!(v1, Vec4::new(0.0, 0.0, 0.0, 2.0));
     }
 
     #[test]
     fn test_mul() {
         let v1 = Vec4::new(1.0, 2.0, 3.0, 4.0);
-        let v2 = Vec3::new(1.0, 2.0, 3.0);
-        assert_eq!(v1 * v2, Vec4::new(1.0, 4.0, 9.0, 4.0));
+        let v2 = Vec4::new(1.0, 2.0, 3.0, 2.5);
+        assert_eq!(v1 * v2, Vec4::new(1.0, 4.0, 9.0, 10.0));
     }
 
     #[test]
     fn test_mul_assign() {
         let mut v1 = Vec4::new(1.0, 2.0, 3.0, 4.0);
-        let v2 = Vec3::new(1.0, 2.0, 3.0);
+        let v2 = Vec4::new(1.0, 2.0, 3.0, 2.0);
         v1 *= v2;
-        assert_eq!(v1, Vec4::new(1.0, 4.0, 9.0, 4.0));
+        assert_eq!(v1, Vec4::new(1.0, 4.0, 9.0, 8.0));
     }
 
     #[test]
     fn test_div() {
         let v1 = Vec4::new(1.0, 2.0, 3.0, 4.0);
-        let v2 = Vec3::new(12.0, 3.0, 55.0);
+        let v2 = Vec4::new(12.0, 3.0, 55.0, 3.0);
         let v3 = v1/v2;
 
         assert_eq!(v3.x, 1.0/12.0);
         assert_eq!(v3.y, 2.0/3.0);
         assert_eq!(v3.z, 3.0/55.0);
-        assert_eq!(v3.w, 4.0);
+        assert_eq!(v3.w, 4.0/3.0);
     }
 
     #[test]
     fn test_div_assign() {
         let mut v1 = Vec4::new(1.0, 2.0, 3.0, 4.0);
-        let v2 = Vec3::new(12.0, 3.0, 55.0);
+        let v2 = Vec4::new(12.0, 3.0, 55.0, 1.255);
         v1 /= v2;
         assert_eq!(v1.x, 1.0/12.0);
         assert_eq!(v1.y, 2.0/3.0);
         assert_eq!(v1.z, 3.0/55.0);
-        assert_eq!(v1.w, 4.0);
+        assert_eq!(v1.w, 4.0/1.255);
     }
 
     #[test]
     fn test_neg() {
         let v1 = Vec4::new(1.0, 2.0, 3.0, 4.0);
-        assert_eq!(-v1, Vec4::new(-1.0, -2.0, -3.0, 4.0));
+        assert_eq!(-v1, Vec4::new(-1.0, -2.0, -3.0, -4.0));
     }
 
     #[test]
