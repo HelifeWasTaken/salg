@@ -73,7 +73,11 @@ impl Vec3 {
     }
 
     pub fn cross(&self, v: &Vec3) -> Vec3 {
-        *self % *v
+        Vec3::new(
+            self.y * v.z - self.z * v.y,
+            self.z * v.x - self.x * v.z,
+            self.x * v.y - self.y * v.x
+        )
     }
 
     pub fn perpendicular(&self, v: &Vec3) -> Vec3 {
@@ -181,48 +185,35 @@ impl Mul<Vec3> for Vec3 {
     }
 }
 
-// MulAssign is not implemented
+// MulAssign is not a valid "special" operator on matrices and vectors
 // Because you must return a scalar from |v| * |v2|
 // -> You can't assign the result of a vector multiplication to a Vec3
 // Duh math are weird
-/*
 impl MulAssign<Vec3> for Vec3 {
     fn mul_assign(&mut self, v: Vec3) {
+        self.x *= v.x;
+        self.y *= v.y;
+        self.z *= v.z;
     }
 }
-*/
-
-// Modulo will be used to implemement the cross product
-/*
-It means that for a vector v1 and v2
-where u = [1, 2, 3] and v = [4, 5, 6]
-the result of u % v is [
-    uy*vz-uz*vy,
-    uz*vx-ux*vz,
-    ux*vy-uy*vx
-]
-so u % v = [
-    5*6-3*4,
-    3*6-1*4,
-    1*6-5*4
-]
-*/
 
 impl Rem<Vec3> for Vec3 {
     type Output = Vec3;
 
     fn rem(self, v: Vec3) -> Vec3 {
         Vec3::new(
-            self.y * v.z - self.z * v.y,
-            self.z * v.x - self.x * v.z,
-            self.x * v.y - self.y * v.x
+            self.x % v.x,
+            self.y % v.y,
+            self.z % v.z
         )
     }
 }
 
 impl RemAssign<Vec3> for Vec3 {
     fn rem_assign(&mut self, v: Vec3) {
-        *self = *self % v
+        self.x %= v.x;
+        self.y %= v.y;
+        self.z %= v.z;
     }
 }
 
